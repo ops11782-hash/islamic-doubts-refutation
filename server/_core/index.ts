@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { sdk } from "./sdk";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -36,6 +37,32 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  
+  // Scheduled endpoint for daily doubt notification
+  app.post("/api/scheduled/daily-doubt-notification", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron) {
+        return res.status(403).json({ error: "cron-only" });
+      }
+      
+      const { notifyOwner } = await import("./notification");
+      await notifyOwner({
+        title: "تذكير يومي: إضافة شبهات جديدة",
+        content: "حان وقت إضافة شبهات ردود جديدة للموقع إن شاء الله. تفضل لإضافة محتوى جديد.",
+      });
+      
+      res.json({ ok: true, message: "Daily notification sent" });
+    } catch (error) {
+      console.error("[Scheduled] Daily notification error:", error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        context: { url: req.url, timestamp: new Date().toISOString() },
+      });
+    }
+  });
+  
   // tRPC API
   app.use(
     "/api/trpc",
