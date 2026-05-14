@@ -1,4 +1,3 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,38 +5,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { ChevronRight, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function AdminCreateDoubt() {
-  const { user, loading } = useAuth();
   const params = useParams();
+  const [, setLocation] = useLocation();
   const doubtId = params.id ? parseInt(params.id as string) : null;
-
-  const [isRedirecting, setIsRedirecting] = useState(false);
-
-  // Redirect if not admin (after auth is loaded)
-  useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
-      setIsRedirecting(true);
-      window.location.href = '/';
-    }
-  }, [user, loading]);
-
-  // Show loading state while auth is being checked
-  if (loading || isRedirecting) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center" dir="rtl">
-        <div className="text-center">جاري التحميل...</div>
-      </div>
-    );
-  }
 
   const { data: categories } = trpc.categories.list.useQuery();
   const createMutation = trpc.doubts.create.useMutation({
     onSuccess: () => {
-      window.location.href = '/admin';
+      setLocation('/admin');
     },
   });
 
@@ -47,7 +27,7 @@ export default function AdminCreateDoubt() {
     content: '',
     categoryId: '',
     refutation: '',
-    status: 'draft' as const,
+    status: 'published' as const,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -167,21 +147,6 @@ export default function AdminCreateDoubt() {
                 rows={6}
                 required
               />
-            </div>
-
-            {/* Status */}
-            <div>
-              <Label htmlFor="status">حالة النشر</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">مسودة</SelectItem>
-                  <SelectItem value="published">منشورة</SelectItem>
-                  <SelectItem value="archived">مؤرشفة</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             {/* Submit */}

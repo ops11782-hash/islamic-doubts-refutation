@@ -1,14 +1,11 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
-import { Search, BookOpen, Zap, Users, ArrowLeft } from "lucide-react";
+import { Search, BookOpen, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   
   const { data: recentDoubts, isLoading: doubtsLoading } = trpc.doubts.list.useQuery({ limit: 6 });
@@ -35,24 +32,11 @@ export default function Home() {
           </div>
           
           <nav className="hidden md:flex items-center gap-6">
+            <a href="/" className="text-foreground hover:text-primary transition-colors">الرئيسية</a>
             <a href="/doubts" className="text-foreground hover:text-primary transition-colors">الشبهات</a>
-            {isAuthenticated && user?.role === 'admin' && (
-              <a href="/admin" className="text-foreground hover:text-primary transition-colors">لوحة التحكم</a>
-            )}
           </nav>
 
-          <div>
-            {isAuthenticated ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm">{user?.name}</span>
-                <Button size="sm" variant="outline">تسجيل الخروج</Button>
-              </div>
-            ) : (
-              <Button size="sm" asChild>
-                <a href={getLoginUrl()}>دخول</a>
-              </Button>
-            )}
-          </div>
+          <div></div>
         </div>
       </header>
 
