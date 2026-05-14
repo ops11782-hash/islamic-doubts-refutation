@@ -1,10 +1,27 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { z } from "zod";
+import {
+  getAllCategories,
+  getPublishedDoubts,
+  getDoubtBySlug,
+  getDoubtsByCategory,
+  searchDoubts,
+  getDoubtEvidences,
+  getStatistics,
+  getAdminDoubts,
+  createDoubt,
+  updateDoubt,
+  deleteDoubt,
+  incrementDoubtViews,
+  initializeDefaultCategories,
+  initializeStatistics,
+} from "./db";
+import { TRPCError } from "@trpc/server";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -17,12 +34,117 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  // Doubts and Refutations
+  doubts: router({
+    // Get all published doubts with pagination
+    list: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(10), offset: z.number().min(0).default(0) }))
+      .query(async ({ input }) => {
+        return getPublishedDoubts(input.limit, input.offset);
+      }),
+    
+    // Get doubt by slug
+    bySlug: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input }) => {
+        const doubt = await getDoubtBySlug(input.slug);
+        if (!doubt) throw new TRPCError({ code: 'NOT_FOUND' });
+        await incrementDoubtViews(doubt.id);
+        return doubt;
+      }),
+    
+    // Get doubt with all evidences
+    withEvidences: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input }) => {
+        const doubt = await getDoubtBySlug(input.slug);
+        if (!doubt) throw new TRPCError({ code: 'NOT_FOUND' });
+        const evidences = await getDoubtEvidences(doubt.id);
+        return { doubt, evidences };
+      }),
+    
+    // Get doubts by category
+    byCategory: publicProcedure
+      .input(z.object({ categoryId: z.number(), limit: z.number().min(1).max(100).default(10), offset: z.number().min(0).default(0) }))
+      .query(async ({ input }) => {
+        return getDoubtsByCategory(input.categoryId, input.limit, input.offset);
+      }),
+    
+    // Search doubts
+    search: publicProcedure
+      .input(z.object({ query: z.string().min(1), limit: z.number().min(1).max(100).default(10), offset: z.number().min(0).default(0) }))
+      .query(async ({ input }) => {
+        return searchDoubts(input.query, input.limit, input.offset);
+      }),
+    
+    // Admin: Get all doubts (draft, published, archived)
+    adminList: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(20), offset: z.number().min(0).default(0) }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        return getAdminDoubts(input.limit, input.offset);
+      }),
+    
+    // Admin: Create doubt
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        slug: z.string().min(1),
+        content: z.string().min(1),
+        categoryId: z.number(),
+        refutation: z.string().min(1),
+        status: z.enum(['draft', 'published', 'archived']).default('draft'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        return createDoubt({
+          ...input,
+          createdBy: ctx.user.id,
+          isAIGenerated: 0,
+        });
+      }),
+    
+    // Admin: Update doubt
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        content: z.string().optional(),
+        refutation: z.string().optional(),
+        status: z.enum(['draft', 'published', 'archived']).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        const { id, ...data } = input;
+        await updateDoubt(id, data);
+        return { success: true };
+      }),
+    
+    // Admin: Delete doubt
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user?.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        await deleteDoubt(input.id);
+        return { success: true };
+      }),
+  }),
+  
+  // Categories
+  categories: router({
+    list: publicProcedure.query(async () => {
+      await initializeDefaultCategories();
+      return getAllCategories();
+    }),
+  }),
+  
+  // Statistics
+  stats: router({
+    get: publicProcedure.query(async () => {
+      await initializeStatistics();
+      return getStatistics();
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

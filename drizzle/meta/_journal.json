@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1778775420138,
+      "tag": "0000_amused_johnny_storm",
+      "breakpoints": true
+    }
+  ]
 }

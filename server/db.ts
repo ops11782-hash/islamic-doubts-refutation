@@ -1,6 +1,20 @@
-import { eq } from "drizzle-orm";
+import { eq, desc, and, or, like, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import {
+  InsertUser,
+  users,
+  categories,
+  doubts,
+  quranicEvidences,
+  hadithEvidences,
+  scholarStatements,
+  realityRefutations,
+  statistics,
+  aiTaskLogs,
+  InsertDoubt,
+  InsertStatistics,
+  InsertAITaskLog,
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +103,188 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ============ Category Queries ============
+export async function getAllCategories() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(categories).orderBy(categories.order);
+}
+
+export async function getCategoryById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
+  return result[0];
+}
+
+// ============ Doubt Queries ============
+export async function getPublishedDoubts(limit = 10, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(doubts)
+    .where(eq(doubts.status, 'published'))
+    .orderBy(desc(doubts.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getDoubtBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(doubts).where(eq(doubts.slug, slug)).limit(1);
+  return result[0];
+}
+
+export async function getDoubtById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(doubts).where(eq(doubts.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getDoubtsByCategory(categoryId: number, limit = 10, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(doubts)
+    .where(and(eq(doubts.categoryId, categoryId), eq(doubts.status, 'published')))
+    .orderBy(desc(doubts.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function searchDoubts(query: string, limit = 10, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(doubts)
+    .where(and(
+      eq(doubts.status, 'published'),
+      or(
+        like(doubts.title, `%${query}%`),
+        like(doubts.content, `%${query}%`),
+        like(doubts.refutation, `%${query}%`)
+      )
+    ))
+    .orderBy(desc(doubts.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getAdminDoubts(limit = 20, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(doubts)
+    .orderBy(desc(doubts.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function createDoubt(data: InsertDoubt) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.insert(doubts).values(data);
+  return result;
+}
+
+export async function updateDoubt(id: number, data: Partial<InsertDoubt>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(doubts).set(data).where(eq(doubts.id, id));
+}
+
+export async function deleteDoubt(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.delete(doubts).where(eq(doubts.id, id));
+}
+
+export async function incrementDoubtViews(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(doubts).set({ views: sql`${doubts.views} + 1` }).where(eq(doubts.id, id));
+}
+
+// ============ Evidence Queries ============
+export async function getDoubtEvidences(doubtId: number) {
+  const db = await getDb();
+  if (!db) return { quranic: [], hadith: [], scholars: [], reality: [] };
+  
+  const [quranic, hadith, scholars, reality] = await Promise.all([
+    db.select().from(quranicEvidences).where(eq(quranicEvidences.doubtId, doubtId)).orderBy(quranicEvidences.order),
+    db.select().from(hadithEvidences).where(eq(hadithEvidences.doubtId, doubtId)).orderBy(hadithEvidences.order),
+    db.select().from(scholarStatements).where(eq(scholarStatements.doubtId, doubtId)).orderBy(scholarStatements.order),
+    db.select().from(realityRefutations).where(eq(realityRefutations.doubtId, doubtId)).orderBy(realityRefutations.order),
+  ]);
+  
+  return { quranic, hadith, scholars, reality };
+}
+
+// ============ Statistics Queries ============
+export async function getStatistics() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(statistics).limit(1);
+  return result[0];
+}
+
+export async function updateStatistics(data: Partial<InsertStatistics>) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(statistics).limit(1);
+  if (existing.length === 0) {
+    await db.insert(statistics).values(data as InsertStatistics);
+  } else {
+    await db.update(statistics).set(data).where(eq(statistics.id, existing[0].id));
+  }
+}
+
+// ============ AI Task Log Queries ============
+export async function createAITaskLog(data: InsertAITaskLog) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(aiTaskLogs).values(data);
+}
+
+export async function updateAITaskLog(id: number, data: Partial<InsertAITaskLog>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(aiTaskLogs).set(data).where(eq(aiTaskLogs.id, id));
+}
+
+// ============ Initialization ============
+export async function initializeStatistics() {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(statistics).limit(1);
+  if (existing.length === 0) {
+    await db.insert(statistics).values({
+      totalDoubts: 0,
+      totalViews: 0,
+      totalVisitors: 0,
+    });
+  }
+}
+
+export async function initializeDefaultCategories() {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(categories);
+  if (existing.length === 0) {
+    const defaultCategories = [
+      { name: 'العقيدة', nameEn: 'Creed', color: '#1e40af', order: 1 },
+      { name: 'الفقه', nameEn: 'Jurisprudence', color: '#7c3aed', order: 2 },
+      { name: 'التاريخ', nameEn: 'History', color: '#0891b2', order: 3 },
+      { name: 'العلوم', nameEn: 'Sciences', color: '#059669', order: 4 },
+      { name: 'الأخلاق', nameEn: 'Ethics', color: '#dc2626', order: 5 },
+      { name: 'الحديث', nameEn: 'Hadith', color: '#ea580c', order: 6 },
+      { name: 'التفسير', nameEn: 'Tafsir', color: '#2563eb', order: 7 },
+      { name: 'أخرى', nameEn: 'Other', color: '#6b7280', order: 8 },
+    ];
+    for (const cat of defaultCategories) {
+      await db.insert(categories).values(cat).catch(() => {});
+    }
+  }
+}
