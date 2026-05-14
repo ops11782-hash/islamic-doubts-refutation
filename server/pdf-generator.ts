@@ -2,7 +2,7 @@
  * PDF Generator - توليد ملفات PDF احترافية ومنظمة
  */
 
-import { PDFDocument, rgb, degrees } from "pdf-lib";
+import { PDFDocument, rgb } from "pdf-lib";
 import { DoubtResponse } from "./ai-orchestrator";
 import fs from "fs";
 import path from "path";
@@ -16,21 +16,13 @@ export interface PDFOptions {
 
 /**
  * توليد ملف PDF احترافي
+ * ملاحظة: pdf-lib لا يدعم النصوص العربية مباشرة، لذا نستخدم نصوص بسيطة
  */
 export async function generatePDF(options: PDFOptions): Promise<string> {
   try {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 842]); // A4 size
     const { width, height } = page.getSize();
-
-    // تحميل الخطوط
-    const fontSize = {
-      title: 28,
-      heading: 18,
-      subheading: 14,
-      body: 11,
-      small: 9,
-    };
 
     // الألوان
     const colors = {
@@ -42,22 +34,22 @@ export async function generatePDF(options: PDFOptions): Promise<string> {
 
     let yPosition = height - 50;
 
-    // Header
-    page.drawText("الحجة والبرهان على الشبهات المثارة حول الإسلام", {
+    // Header - استخدام نص بسيط بدون عربية
+    page.drawText("Islamic Refutation System", {
       x: 50,
       y: yPosition,
-      size: fontSize.title,
+      size: 28,
       color: colors.primary,
-      maxWidth: width - 100,
     });
 
     yPosition -= 40;
 
     // التاريخ
-    page.drawText(`التاريخ: ${options.date.toLocaleDateString("ar-SA")}`, {
+    const dateStr = options.date.toLocaleDateString("en-US");
+    page.drawText(`Date: ${dateStr}`, {
       x: 50,
       y: yPosition,
-      size: fontSize.small,
+      size: 9,
       color: colors.dark,
     });
 
@@ -74,81 +66,81 @@ export async function generatePDF(options: PDFOptions): Promise<string> {
     yPosition -= 30;
 
     // الشبهة
-    page.drawText("الشبهة:", {
+    page.drawText("Doubt:", {
       x: 50,
       y: yPosition,
-      size: fontSize.heading,
+      size: 18,
       color: colors.primary,
     });
 
     yPosition -= 25;
 
-    // نص الشبهة مع التفاف النص
-    const doubtText = options.doubt.doubt;
-    const wrappedDoubtLines = wrapText(doubtText, width - 100, fontSize.body);
-    for (const line of wrappedDoubtLines) {
+    // نص الشبهة
+    const doubtLines = wrapText(options.doubt.doubt, width - 100, 11);
+    for (const line of doubtLines) {
       if (yPosition < 100) {
-        // إضافة صفحة جديدة إذا لزم الأمر
-        page.drawText(line, {
-          x: 50,
-          y: yPosition,
-          size: fontSize.body,
-          color: colors.text,
-        });
-        yPosition -= 20;
+        break;
       }
+      page.drawText(line, {
+        x: 50,
+        y: yPosition,
+        size: 11,
+        color: colors.text,
+      });
+      yPosition -= 20;
     }
 
     yPosition -= 20;
 
     // الرد القاطع
-    page.drawText("الرد القاطع:", {
+    page.drawText("Refutation:", {
       x: 50,
       y: yPosition,
-      size: fontSize.heading,
+      size: 18,
       color: colors.primary,
     });
 
     yPosition -= 25;
 
-    const refutationLines = wrapText(options.doubt.refutation, width - 100, fontSize.body);
+    const refutationLines = wrapText(options.doubt.refutation, width - 100, 11);
     for (const line of refutationLines) {
       if (yPosition < 100) {
-        page.drawText(line, {
-          x: 50,
-          y: yPosition,
-          size: fontSize.body,
-          color: colors.text,
-        });
-        yPosition -= 20;
+        break;
       }
+      page.drawText(line, {
+        x: 50,
+        y: yPosition,
+        size: 11,
+        color: colors.text,
+      });
+      yPosition -= 20;
     }
 
     yPosition -= 20;
 
     // الأدلة القرآنية
     if (options.doubt.quranicEvidences.length > 0) {
-      page.drawText("الأدلة القرآنية:", {
+      page.drawText("Quranic Evidences:", {
         x: 50,
         y: yPosition,
-        size: fontSize.subheading,
+        size: 14,
         color: colors.primary,
       });
 
       yPosition -= 20;
 
-      for (const evidence of options.doubt.quranicEvidences) {
-        const evidenceLines = wrapText(`• ${evidence}`, width - 100, fontSize.body);
+      for (const evidence of options.doubt.quranicEvidences.slice(0, 3)) {
+        if (yPosition < 100) break;
+        const evidenceLines = wrapText(`• ${evidence}`, width - 100, 11);
         for (const line of evidenceLines) {
-          if (yPosition < 100) {
-            page.drawText(line, {
-              x: 60,
-              y: yPosition,
-              size: fontSize.body,
-              color: colors.text,
-            });
-            yPosition -= 18;
-          }
+          if (yPosition < 100) break;
+          page.drawText(line, {
+            x: 60,
+            y: yPosition,
+            size: 11,
+            color: colors.text,
+          });
+          yPosition -= 18;
         }
       }
 
@@ -157,27 +149,27 @@ export async function generatePDF(options: PDFOptions): Promise<string> {
 
     // الأحاديث النبوية
     if (options.doubt.hadithEvidences.length > 0) {
-      page.drawText("الأحاديث النبوية:", {
+      page.drawText("Hadith Evidences:", {
         x: 50,
         y: yPosition,
-        size: fontSize.subheading,
+        size: 14,
         color: colors.primary,
       });
 
       yPosition -= 20;
 
-      for (const hadith of options.doubt.hadithEvidences) {
-        const hadithLines = wrapText(`• ${hadith}`, width - 100, fontSize.body);
+      for (const hadith of options.doubt.hadithEvidences.slice(0, 3)) {
+        if (yPosition < 100) break;
+        const hadithLines = wrapText(`• ${hadith}`, width - 100, 11);
         for (const line of hadithLines) {
-          if (yPosition < 100) {
-            page.drawText(line, {
-              x: 60,
-              y: yPosition,
-              size: fontSize.body,
-              color: colors.text,
-            });
-            yPosition -= 18;
-          }
+          if (yPosition < 100) break;
+          page.drawText(line, {
+            x: 60,
+            y: yPosition,
+            size: 11,
+            color: colors.text,
+          });
+          yPosition -= 18;
         }
       }
 
@@ -186,51 +178,24 @@ export async function generatePDF(options: PDFOptions): Promise<string> {
 
     // أقوال العلماء
     if (options.doubt.scholarStatements.length > 0) {
-      page.drawText("أقوال العلماء:", {
+      page.drawText("Scholars Statements:", {
         x: 50,
         y: yPosition,
-        size: fontSize.subheading,
+        size: 14,
         color: colors.primary,
       });
 
       yPosition -= 20;
 
-      for (const statement of options.doubt.scholarStatements) {
-        const statementLines = wrapText(`• ${statement}`, width - 100, fontSize.body);
+      for (const statement of options.doubt.scholarStatements.slice(0, 2)) {
+        if (yPosition < 100) break;
+        const statementLines = wrapText(`• ${statement}`, width - 100, 11);
         for (const line of statementLines) {
-          if (yPosition < 100) {
-            page.drawText(line, {
-              x: 60,
-              y: yPosition,
-              size: fontSize.body,
-              color: colors.text,
-            });
-            yPosition -= 18;
-          }
-        }
-      }
-
-      yPosition -= 15;
-    }
-
-    // الرد من الواقع
-    if (options.doubt.realityRefutation) {
-      page.drawText("الرد من الواقع المحسوس:", {
-        x: 50,
-        y: yPosition,
-        size: fontSize.subheading,
-        color: colors.primary,
-      });
-
-      yPosition -= 20;
-
-      const realityLines = wrapText(options.doubt.realityRefutation, width - 100, fontSize.body);
-      for (const line of realityLines) {
-        if (yPosition < 100) {
+          if (yPosition < 100) break;
           page.drawText(line, {
-            x: 50,
+            x: 60,
             y: yPosition,
-            size: fontSize.body,
+            size: 11,
             color: colors.text,
           });
           yPosition -= 18;
@@ -239,10 +204,10 @@ export async function generatePDF(options: PDFOptions): Promise<string> {
     }
 
     // Footer
-    page.drawText("موقع الحجة والبرهان على الشبهات المثارة حول الإسلام", {
+    page.drawText("Islamic Refutation System - Professional Response to Doubts", {
       x: 50,
       y: 30,
-      size: fontSize.small,
+      size: 9,
       color: colors.dark,
     });
 
@@ -271,10 +236,8 @@ function wrapText(text: string, maxWidth: number, fontSize: number): string[] {
     // تقدير تقريبي لعرض النص
     const estimatedWidth = testLine.length * (fontSize * 0.5);
 
-    if (estimatedWidth > maxWidth) {
-      if (currentLine) {
-        lines.push(currentLine);
-      }
+    if (estimatedWidth > maxWidth && currentLine) {
+      lines.push(currentLine);
       currentLine = word;
     } else {
       currentLine = testLine;
@@ -293,7 +256,7 @@ function wrapText(text: string, maxWidth: number, fontSize: number): string[] {
  */
 export function generateFileName(doubt: string): string {
   const sanitized = doubt
-    .replace(/[^a-zA-Z0-9\u0600-\u06FF\s]/g, "")
+    .replace(/[^a-zA-Z0-9\s]/g, "")
     .trim()
     .substring(0, 50)
     .replace(/\s+/g, "_");
