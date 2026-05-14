@@ -1,0 +1,43 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "server",
+    "db",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://CyyrZQJeihYknXt.root:fc60HPdr8s9VNWDAh35C@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/iQNVj7VgxLExd9v4DYGXZ5?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": [
+    "no_db_push"
+  ],
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663653317798/iQNVj7VgxLExd9v4DYGXZ5",
+    "access_key_id": "ASIAZV3A2ECZOASGSHC3",
+    "secret_access_key": "Uxm/gcgBL6kOxFyPlzRJ2mriYKDOQicEiwQLblaj",
+    "session_token": "IQoJb3JpZ2luX2VjEJP//////////wEaCXVzLWVhc3QtMSJIMEYCIQCso4id5IwPV9A0cnEEFVKv85hc0VNAMlS6tBQn4/xiMQIhAJLYRaAm657Pi9hdXO6Eq8SfB21UHbNWzwN3ODqy0s/9KvYDCFwQBBoMNjY1Mzg2MDk4ODY2IgxnrSlnVqoaZHipSt4q0wMSU/zodNUQBEcNq3yahVyfNSqHX/4BO3bbtrm/f2Zn5G2SqXiDYPPUHmG+3+EPjIQ8jYB3N71PVMFq1vOwwAccGKSeqMhXY60/PfQdAdXIiXbKEnAJR5g9JWXp1bYjJFygEf7b7GQwj7lYBEnB8Tu7J4TxxX4baE6R6BoxtPH8rs+3lb/2GRwMoQTrOpsrRcIdBZkYoAzsMKFjKgJfCeWvOkPAgnVCmnMWPBDXdMlyU/cAYzkhcy19voBr1/Pm1bh9m25bUezNV4Xu1PEg6X2FYdrcK93guc/A4VZdDQ7+G6KNSPMZu/PHbPYRGZXjd+JiZoc1ZxZzSm6E7MPAyv77WKGgSBfwYwfB0WWvrnE16y2NXXKDLCcRHkdXiC7UkM1OqV7qXWT+62IF0XJxR+kYw3Ffg5E1oj4Zz/pa/hDn7yuEJsUFIMw1BXWgxLsJ8W+KbeFlIwNFOI0IbAgPlJO/x45IVT8wjDr4saixEsZu0wMIrxB7Bt7+AGps4h/pIuZeaPemiy9TF6lFQxeTe9//1VK921dcWGl+X7wWBWS7kpmLe7LQSzsXf5YNsjqPhHC99czk5Ek18DBlDeTIRFlsvDbMbXiHbi+h+Cq4xpsX5DKbjzDv0ZbQBjqcAXnvQ7SRL54OtfhLl7+cbb5oliLVbMn9ba3h+9MgdsFvWrtX8tm+rnzQiT171EwtJhPZOyo9tn7Xg126y1kED5TxChGNxlRIZwu8P0i1WDuP2AdOSosVvIqkIUf0NGUcEWy/p6mjSvKtr1ORmIDH9iZbkW3iMYOtB76oKpHa3vuNwtcptY+zvjSK9He1EaoBqxuTlZAsiajwtlJf9g==",
+    "expiration": "2026-05-14T22:50:23.000Z"
+  },
+  "name": "islamic-doubts-refutation",
+  "path": "/home/ubuntu/islamic-doubts-refutation",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "ESfQ78fwK5Bhkb5HjELrno",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "bh7oBJbcXeDCHXAcHNNnMc",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "ops",
+    "OWNER_OPEN_ID": "iLrPzSBuz4h5ipys9diDQB",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "6268cc6a-f9fd-450d-8999-ba04b713504a",
+    "VITE_APP_ID": "iQNVj7VgxLExd9v4DYGXZ5",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "الحجة والبرهان على الشبهات المثارة حول الإسلام",
+    "VITE_FRONTEND_FORGE_API_KEY": "EiVawrAxHk3RPyvNEMfusS",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-db-user",
+  "test_command": "pnpm test"
+}
