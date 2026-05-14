@@ -38,8 +38,34 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   
-  // Scheduled endpoint for daily doubt notification
-  app.post("/api/scheduled/daily-doubt-notification", async (req, res) => {
+  // Scheduled endpoint for AI-generated doubt
+  app.post("/api/scheduled/ai-generated-doubt", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron) {
+        return res.status(403).json({ error: "cron-only" });
+      }
+      
+      const { executeDailyAITask } = await import("../daily-ai-task");
+      const result = await executeDailyAITask();
+      
+      if (result.success) {
+        res.json({ ok: true, doubtId: result.doubtId, pdfUrl: result.pdfUrl });
+      } else {
+        res.status(500).json({ error: result.error });
+      }
+    } catch (error) {
+      console.error("[Scheduled] AI doubt generation error:", error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        context: { url: req.url, timestamp: new Date().toISOString() },
+      });
+    }
+  });
+  
+  // Scheduled endpoint for daily reminder
+  app.post("/api/scheduled/daily-reminder", async (req, res) => {
     try {
       const user = await sdk.authenticateRequest(req);
       if (!user.isCron) {
@@ -52,9 +78,9 @@ async function startServer() {
         content: "حان وقت إضافة شبهات ردود جديدة للموقع إن شاء الله. تفضل لإضافة محتوى جديد.",
       });
       
-      res.json({ ok: true, message: "Daily notification sent" });
+      res.json({ ok: true, message: "Daily reminder sent" });
     } catch (error) {
-      console.error("[Scheduled] Daily notification error:", error);
+      console.error("[Scheduled] Daily reminder error:", error);
       res.status(500).json({
         error: error instanceof Error ? error.message : "Unknown error",
         stack: error instanceof Error ? error.stack : undefined,
